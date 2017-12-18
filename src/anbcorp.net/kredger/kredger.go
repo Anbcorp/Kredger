@@ -29,6 +29,43 @@ type Transaction struct {
 	balance float64
 }
 
+func buildTx(record []string) (tx Transaction, err error) {
+        var values [3] float64
+        var ttype Txtype
+
+        switch record[3] {
+            case "withdrawal":
+                ttype = Txwithdraw
+            case "deposit":
+                ttype = Txdeposit
+            case "trade":
+                ttype = Txtrade
+            default:
+                ttype = -1
+        }
+
+        for i:= 0; i<3; i+=1 {
+            values[i], err = strconv.ParseFloat(record[i+6], 64)
+            if err != nil {
+                return
+            }
+        }
+
+        tx = Transaction{
+            txid: record[0],
+            refid: record[1],
+            time: record[2],
+            txtype: ttype,
+            asset: record[5],
+            amount: values[0],
+            fee: values[1],
+            balance: values[2],
+        }
+
+        return tx, nil
+
+}
+
 func main() {
     csvFile, err := os.Open("history.csv")
     if err != nil {
@@ -38,7 +75,6 @@ func main() {
 
     r := csv.NewReader(bufio.NewReader(csvFile))
 
-upper:
 	for {
 		record, err := r.Read()
 		if err == io.EOF {
@@ -48,33 +84,6 @@ upper:
 			log.Fatal(err)
 		}
 
-        tx := Transaction{ }
-        tx.txid = record[0]
-        tx.refid = record[1]
-        tx.time = record[2]
-        switch record[3] {
-            case "withdrawal":
-                tx.txtype = Txwithdraw
-            case "deposit":
-                tx.txtype = Txdeposit
-            case "trade":
-                tx.txtype = Txtrade
-            default:
-                tx.txtype = -1
-        }
-        tx.asset = record[5]
-        var val [3]float64
-        for i:= 0; i<3; i+=1 {
-            val[i], err = strconv.ParseFloat(record[i+6], 64)
-            if err != nil {
-                log.Println(record)
-                log.Println(err)
-                continue upper
-            }
-        }
-        tx.amount = val[0]
-        tx.fee = val[1]
-        tx.balance = val[2]
-		fmt.Println(tx)
+		fmt.Println(buildTx(record))
 	}
 }
