@@ -30,27 +30,27 @@ type Transaction struct {
 }
 
 type Trade struct {
-    tx1 *Transaction
-    tx2 *Transaction
+	tx1 *Transaction
+	tx2 *Transaction
 }
 
 func (tr Trade) fees() (fees float64, asset string) {
 
-    if tr.tx1.fee > 0 {
-        fees += tr.tx1.fee
-        asset = tr.tx1.asset
-    }
+	if tr.tx1.fee > 0 {
+		fees += tr.tx1.fee
+		asset = tr.tx1.asset
+	}
 
-    if tr.tx2.fee > 0 {
-        if asset != "" && tr.tx2.asset != asset {
-            log.Printf("%f %s : %f %s", tr.tx1.fee, tr.tx1.asset, tr.tx2.fee, tr.tx2.asset)
-            log.Fatal(tr.tx1.refid, ": Fees on both side of trade")
-        }
-        fees += tr.tx2.fee
-        asset = tr.tx2.asset
-    }
+	if tr.tx2.fee > 0 {
+		if asset != "" && tr.tx2.asset != asset {
+			log.Printf("%f %s : %f %s", tr.tx1.fee, tr.tx1.asset, tr.tx2.fee, tr.tx2.asset)
+			log.Fatal(tr.tx1.refid, ": Fees on both side of trade")
+		}
+		fees += tr.tx2.fee
+		asset = tr.tx2.asset
+	}
 
-    return
+	return
 }
 
 func buildTx(record []string) (tx Transaction, err error) {
@@ -99,9 +99,9 @@ func main() {
 
 	r := csv.NewReader(bufio.NewReader(csvFile))
 
-    var tradeList []Trade
-    var unmatchedQueue []Transaction
-    var backlog []Transaction
+	var tradeList []Trade
+	var unmatchedQueue []Transaction
+	var backlog []Transaction
 
 	for {
 		record, err := r.Read()
@@ -112,34 +112,34 @@ func main() {
 			log.Fatal(err)
 		}
 
-        tx, err := buildTx(record)
-        if err != nil {
-            log.Println(record)
-            log.Println(err)
-            continue
-        }
+		tx, err := buildTx(record)
+		if err != nil {
+			log.Println(record)
+			log.Println(err)
+			continue
+		}
 
-        if tx.txtype == Txtrade {
-            if len(backlog)<=0 {
-                backlog = append(backlog, tx)
-                continue
-            }
-            backtx := backlog[len(backlog)-1]
-            if backtx.refid == tx.refid {
-                tradeList = append(tradeList, Trade{&tx, &backtx})
-                // Remove the last element
-                backlog = backlog[:len(backlog)-1]
-                log.Printf("Matched %s with %s", tx.refid, backtx.refid)
-            } else {
-                unmatchedQueue = append(unmatchedQueue, tx)
-            }
-        }
+		if tx.txtype == Txtrade {
+			if len(backlog) <= 0 {
+				backlog = append(backlog, tx)
+				continue
+			}
+			backtx := backlog[len(backlog)-1]
+			if backtx.refid == tx.refid {
+				tradeList = append(tradeList, Trade{&tx, &backtx})
+				// Remove the last element
+				backlog = backlog[:len(backlog)-1]
+				log.Printf("Matched %s with %s", tx.refid, backtx.refid)
+			} else {
+				unmatchedQueue = append(unmatchedQueue, tx)
+			}
+		}
 	}
-    fmt.Println(tradeList)
-    fmt.Println(unmatchedQueue)
+	fmt.Println(tradeList)
+	fmt.Println(unmatchedQueue)
 
-    for _, tr := range tradeList {
-        fee, asset := tr.fees()
-        fmt.Printf("Trade (%s) : %s(%f) vs %s(%f) for %s%f\n", tr.tx1.refid, tr.tx1.asset, tr.tx1.amount, tr.tx2.asset, tr.tx2.amount, asset, fee)
-    }
+	for _, tr := range tradeList {
+		fee, asset := tr.fees()
+		fmt.Printf("Trade (%s) : %s(%f) vs %s(%f) for %s%f\n", tr.tx1.refid, tr.tx1.asset, tr.tx1.amount, tr.tx2.asset, tr.tx2.amount, asset, fee)
+	}
 }
